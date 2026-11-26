@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
-import { Archivo } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 
-const archivo = Archivo({
+// 字体文件随仓库提供（来自 @fontsource-variable/archivo，OFL 协议），构建时不需要访问 Google Fonts
+const archivo = localFont({
+  src: "./fonts/archivo-latin-wght-normal.woff2",
   variable: "--font-archivo",
-  subsets: ["latin"],
+  weight: "100 900",
 });
 
 export const metadata: Metadata = {

@@ -1,6 +1,6 @@
 # FAgent：DRAM 良率与失效分析 Agent（Demo）
 
-> 第一次接触？先读 **[docs/学习指南.md](docs/学习指南.md)**：从芯片制造基础、Agent 原理讲到代码走读和动手练习。
+> 第一次接触？先读 **[docs/学习指南.md](docs/学习指南.md)**：从芯片制造基础、Agent 原理讲到代码走读和动手练习。要部署到国内服务器，看 **[docs/部署指南.md](docs/部署指南.md)**。
 
 面向存储芯片 fab 的良率 / 失效分析助手。给它一个良率异常，它会自己调用工具一步步查：
 批次良率 → Bin 柏拉图 → 晶圆图空间模式 → 设备共性分析（卡方检验）→ 设备日志 → 在线量测 → 历史 FA 案例 → 影响范围 → 8D 报告草稿。
@@ -43,3 +43,4 @@ npm run dev        # http://localhost:3000
 - `src/components/`：工作台界面、晶圆图、图表
 - `scripts/try-tool.ts`：在命令行直接调用某个工具，看它返回给模型的数据，例如 `npx tsx scripts/try-tool.ts get_lot_summary '{"lot_id":"N3B417"}'`
 - `docs/学习指南.md`：零基础学习指南
+- `docs/部署指南.md`：部署到国内云服务器（Nginx + pm2，离线回放模式）

@@ -56,6 +56,7 @@ export async function POST(request: Request) {
   });
 
   return new Response(stream, {
-    headers: { "Content-Type": "application/x-ndjson; charset=utf-8", "Cache-Control": "no-store" },
+    // X-Accel-Buffering: 让 Nginx 反向代理不要攒着整段响应再发，否则流式效果会消失
+    headers: { "Content-Type": "application/x-ndjson; charset=utf-8", "Cache-Control": "no-store", "X-Accel-Buffering": "no" },
   });
 }

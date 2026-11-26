@@ -345,7 +345,7 @@ function Header({
         )}
         <span
           className="flex items-center gap-1.5 rounded-full border border-line bg-panel px-2.5 py-1 text-xs text-ink-2"
-          title={isLive ? "调用 Claude API，由模型自主决定调用哪些工具" : "未配置 ANTHROPIC_API_KEY：按预置调查路线调用同一套真实工具，结果都由数据算出"}
+          title={isLive ? "调用大模型 API，由模型自主决定调用哪些工具" : "未配置模型 API Key：按预置调查路线调用同一套真实工具，结果都由数据算出"}
         >
           <span className={`size-1.5 rounded-full ${isLive ? "bg-[#199e70]" : "bg-muted"}`} />
           {modeLabel}

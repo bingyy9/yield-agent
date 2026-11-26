@@ -27,6 +27,27 @@ npm run dev        # http://localhost:3000
 
   配好后由 Claude 自主决定调用哪些工具。页头可以勾选「强制回放」切回脚本。
 
+- **在线 Agent（国产模型）**：Claude API 在国内用不了，可以改接 DeepSeek、通义千问、智谱 GLM、腾讯混元等支持工具调用的模型（走 OpenAI 兼容协议，代码在 `src/lib/agent/compat.ts`）：
+
+  ```
+  LLM_PROVIDER=deepseek      # deepseek / qwen / glm / hunyuan，默认 deepseek
+  LLM_API_KEY=sk-...         # 在对应厂商控制台申请
+  # 以下都是可选
+  LLM_MODEL=deepseek-chat    # 覆盖默认模型，名字以厂商控制台为准
+  LLM_BASE_URL=https://...   # 用预设以外的厂商或代理时填，此时 LLM_MODEL 也必填
+  LLM_STREAM=false           # 关闭流式；qwen 默认就是关闭的
+  LLM_MAX_TOKENS=8192
+  ```
+
+  | LLM_PROVIDER | 接口地址 | 默认模型 |
+  | --- | --- | --- |
+  | `deepseek` | `https://api.deepseek.com` | `deepseek-chat` |
+  | `qwen` | `https://dashscope.aliyuncs.com/compatible-mode/v1` | `qwen-plus` |
+  | `glm` | `https://open.bigmodel.cn/api/paas/v4` | `glm-4.6` |
+  | `hunyuan` | `https://api.hunyuan.cloud.tencent.com/v1` | `hunyuan-turbos-latest` |
+
+  优先级：配了 `ANTHROPIC_API_KEY` 用 Claude，否则配了 `LLM_API_KEY` 用国产模型，都没有就离线回放。改完 `.env.local` 要重启；生产环境（`npm start`）还要重新 `npm run build`，因为首页是构建时生成的。
+
 ## 演示脚本（三个预置场景）
 
 | 场景 | 现象 | Agent 查到的根因 |
@@ -38,9 +59,9 @@ npm run dev        # http://localhost:3000
 ## 目录
 
 - `src/lib/fab/`：模拟 fab，包括晶圆与 Bin 生成、设备与事件、量测、FA 案例库、统计分析
-- `src/lib/agent/`：工具定义（zod 校验）、在线循环（Claude 流式 + 工具调用）、离线回放
+- `src/lib/agent/`：工具定义（zod 校验）、在线循环（`live.ts` 接 Claude，`compat.ts` 接国产模型）、离线回放
 - `src/app/api/agent/route.ts`：以 NDJSON 流式输出 Agent 事件
 - `src/components/`：工作台界面、晶圆图、图表
 - `scripts/try-tool.ts`：在命令行直接调用某个工具，看它返回给模型的数据，例如 `npx tsx scripts/try-tool.ts get_lot_summary '{"lot_id":"N3B417"}'`
 - `docs/学习指南.md`：零基础学习指南
-- `docs/部署指南.md`：部署到国内云服务器（Nginx + pm2，离线回放模式）
+- `docs/部署指南.md`：部署到国内云服务器（Nginx + pm2，离线回放或国产模型在线模式）

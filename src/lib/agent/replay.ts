@@ -328,7 +328,7 @@ export async function runReplay(prompt: string, turn: number, emit: Emit, signal
   const mentioned = prompt.toUpperCase().match(/N3B\d{3}/)?.[0];
   if (turn > 0 && !mentioned) {
     await s.say(
-      "离线回放模式只演示预设的完整调查流程，不能回答自由追问。在 .env.local 里配置 ANTHROPIC_API_KEY 后重启，就会由 Claude 实时调查并支持追问。你也可以点左侧另一个异常批次，看另一条调查路径。",
+      "离线回放模式只演示预设的完整调查流程，不能回答自由追问。在 .env.local 里配置 ANTHROPIC_API_KEY（Claude）或 LLM_API_KEY（DeepSeek、通义千问等国产模型）后重启，就会由大模型实时调查并支持追问。你也可以点左侧另一个异常批次，看另一条调查路径。",
     );
     return;
   }

@@ -1,0 +1,107 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-base: #e6eaec;
+  --color-panel: #f4f6f7;
+  --color-paper: #fbfcfc;
+  --color-line: #d3dadf;
+  --color-line-soft: #e1e6e9;
+  --color-ink: #1b2430;
+  --color-ink-2: #52606d;
+  --color-muted: #8693a0;
+  --color-amber: #f2a900;
+  --color-amber-soft: #fcefc7;
+  --color-critical: #a3241a;
+  --color-warn: #a8660b;
+  --font-sans: var(--font-archivo), "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, sans-serif;
+}
+
+html,
+body {
+  background: var(--color-base);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+.num {
+  font-variant-numeric: tabular-nums;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-ink);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* 细滚动条 */
+.scroll-thin {
+  scrollbar-width: thin;
+  scrollbar-color: #c3ccd2 transparent;
+}
+
+/* 晶圆扫描：工具执行期间琥珀色扫描带从上往下扫过晶圆 */
+@keyframes wafer-sweep {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(380px);
+  }
+}
+.wafer-sweep {
+  animation: wafer-sweep 1.8s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+
+@keyframes agent-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+.agent-pulse {
+  animation: agent-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes agent-bar {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(250%);
+  }
+}
+.agent-bar {
+  animation: agent-bar 1.3s ease-in-out infinite;
+}
+
+@keyframes caret {
+  50% {
+    opacity: 0;
+  }
+}
+.caret::after {
+  content: "";
+  display: inline-block;
+  width: 0.5em;
+  height: 1.05em;
+  margin-left: 2px;
+  vertical-align: -0.15em;
+  background: var(--color-amber);
+  animation: caret 1s steps(1) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wafer-sweep {
+    animation: none;
+    display: none;
+  }
+  .agent-pulse,
+  .agent-bar,
+  .caret::after {
+    animation: none;
+  }
+}

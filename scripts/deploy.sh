@@ -16,7 +16,7 @@ npx tsc --noEmit
 npm run lint --silent
 
 echo "▶ 上传代码到 $HOST:$DIR"
-rsync -az --delete --exclude node_modules --exclude .next --exclude .env.local --exclude .git ./ "$HOST:$DIR/"
+rsync -az --delete --exclude node_modules --exclude .next --exclude .env.local --exclude .git --exclude .DS_Store --exclude tsconfig.tsbuildinfo ./ "$HOST:$DIR/"
 
 echo "▶ 服务器上安装依赖、构建、重启"
 ssh "$HOST" "cd $DIR && npm ci --no-audit --no-fund && npm run build && pm2 restart yield-agent --update-env"

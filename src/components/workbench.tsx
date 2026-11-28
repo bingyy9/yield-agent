@@ -106,11 +106,13 @@ const SCENARIOS = [
 
 // ---------- 主界面 ----------
 
-export function Workbench({ lots, liveAvailable }: { lots: LotCard[]; liveAvailable: boolean }) {
+export function Workbench({ lots }: { lots: LotCard[] }) {
   const [log, dispatch] = useReducer(reduce, { items: [], next: 1 });
   const [running, setRunning] = useState(false);
   const [mode, setMode] = useState<{ mode: "live" | "replay"; model: string } | null>(null);
-  const [forceReplay, setForceReplay] = useState(false);
+  // 默认离线回放；服务端配了模型 Key（liveModel 不为空）时，用户可以切到在线
+  const [live, setLive] = useState(false);
+  const [liveModel, setLiveModel] = useState<string | null>(null);
   const [input, setInput] = useState("");
   const [stageLot, setStageLot] = useState("N3B417");
   const [maps, setMaps] = useState<Record<string, MapsView>>({});
@@ -163,7 +165,7 @@ export function Workbench({ lots, liveAvailable }: { lots: LotCard[]; liveAvaila
         const res = await fetch("/api/agent", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ prompt: text, history: historyRef.current, turn: turnRef.current, forceReplay }),
+          body: JSON.stringify({ prompt: text, history: historyRef.current, turn: turnRef.current, live }),
           signal: ctrl.signal,
         });
         if (!res.ok || !res.body) throw new Error(`服务端返回 ${res.status}`);
@@ -190,7 +192,7 @@ export function Workbench({ lots, liveAvailable }: { lots: LotCard[]; liveAvaila
         setRunning(false);
       }
     },
-    [running, forceReplay, onEvent],
+    [running, live, onEvent],
   );
 
   const reset = () => {
@@ -205,6 +207,13 @@ export function Workbench({ lots, liveAvailable }: { lots: LotCard[]; liveAvaila
     setMode(null);
     inputRef.current?.focus();
   };
+
+  useEffect(() => {
+    fetch("/api/agent")
+      .then((r) => r.json())
+      .then((d: { liveModel: string | null }) => setLiveModel(d.liveModel))
+      .catch(() => {});
+  }, []);
 
   // 流式输出时跟随到底部；用户主动上滚则停止跟随
   useEffect(() => {
@@ -233,12 +242,10 @@ export function Workbench({ lots, liveAvailable }: { lots: LotCard[]; liveAvaila
     return set;
   }, [log.items]);
 
-  const modeLabel = mode ? (mode.mode === "live" ? `在线模式，${mode.model}` : "离线回放") : liveAvailable && !forceReplay ? "在线模式" : "离线回放";
-  const isLive = mode ? mode.mode === "live" : liveAvailable && !forceReplay;
 
   return (
     <div className="flex min-h-dvh flex-col xl:h-dvh">
-      <Header modeLabel={modeLabel} isLive={isLive} liveAvailable={liveAvailable} forceReplay={forceReplay} setForceReplay={setForceReplay} running={running} canReset={log.items.length > 0} onReset={reset} />
+      <Header live={live} setLive={setLive} liveModel={mode?.mode === "live" ? mode.model : liveModel} started={log.items.length > 0} onReset={reset} />
       <div className="relative h-0.5 overflow-hidden bg-transparent" aria-hidden>
         {running && <div className="agent-bar absolute inset-y-0 w-1/3 bg-amber" />}
       </div>
@@ -290,22 +297,16 @@ export function Workbench({ lots, liveAvailable }: { lots: LotCard[]; liveAvaila
 // ---------- 顶栏 ----------
 
 function Header({
-  modeLabel,
-  isLive,
-  liveAvailable,
-  forceReplay,
-  setForceReplay,
-  running,
-  canReset,
+  live,
+  setLive,
+  liveModel,
+  started,
   onReset,
 }: {
-  modeLabel: string;
-  isLive: boolean;
-  liveAvailable: boolean;
-  forceReplay: boolean;
-  setForceReplay: (v: boolean) => void;
-  running: boolean;
-  canReset: boolean;
+  live: boolean;
+  setLive: (v: boolean) => void;
+  liveModel: string | null;
+  started: boolean;
   onReset: () => void;
 }) {
   return (
@@ -337,26 +338,58 @@ function Header({
         </div>
       </dl>
       <div className="ml-auto flex items-center gap-2">
-        {liveAvailable && (
-          <label className="flex cursor-pointer items-center gap-1.5 text-xs text-ink-2">
-            <input type="checkbox" className="accent-ink" checked={forceReplay} disabled={running} onChange={(e) => setForceReplay(e.target.checked)} />
-            用离线回放
-          </label>
-        )}
-        <span
-          className="flex items-center gap-1.5 rounded-full border border-line bg-panel px-2.5 py-1 text-xs text-ink-2"
-          title={isLive ? "调用大模型 API，由模型自主决定调用哪些工具" : "未配置模型 API Key：按预置调查路线调用同一套真实工具，结果都由数据算出"}
-        >
-          <span className={`size-1.5 rounded-full ${isLive ? "bg-[#199e70]" : "bg-muted"}`} />
-          {modeLabel}
-        </span>
-        {canReset && (
+        <ModeSwitch live={live} setLive={setLive} liveModel={liveModel} locked={started} />
+        {started && (
           <button type="button" onClick={onReset} className="rounded-md px-2.5 py-1 text-xs text-ink-2 hover:bg-panel hover:text-ink">
             新调查
           </button>
         )}
       </div>
     </header>
+  );
+}
+
+// 运行模式切换：两种模式的对话记录格式不同，调查开始后锁定，点「新调查」才能换
+function ModeSwitch({ live, setLive, liveModel, locked }: { live: boolean; setLive: (v: boolean) => void; liveModel: string | null; locked: boolean }) {
+  const lockHint = "调查进行中不能切换模式，先点「新调查」";
+  const options = [
+    {
+      key: "replay",
+      on: !live,
+      label: "离线回放",
+      blocked: locked ? lockHint : null,
+      title: "按预置调查路线调用同一套真实工具，结果都由数据算出；不支持自由追问",
+      pick: () => setLive(false),
+    },
+    {
+      key: "live",
+      on: live,
+      label: liveModel ? `在线（${liveModel}）` : "在线",
+      blocked: !liveModel ? "服务端没有配置模型 API Key（ANTHROPIC_API_KEY 或 LLM_API_KEY），只能离线回放" : locked ? lockHint : null,
+      title: `调用 ${liveModel} 实时调查，由模型自主决定调用哪些工具，支持追问`,
+      pick: () => setLive(true),
+    },
+  ];
+  return (
+    <div role="group" aria-label="运行模式" className="flex rounded-full border border-line bg-panel p-0.5 text-xs">
+      {options.map((o) => (
+        <button
+          key={o.key}
+          type="button"
+          aria-pressed={o.on}
+          // 用 aria-disabled 而不是 disabled：禁用的按钮在部分浏览器里不显示 title 提示，用户就不知道为什么点不了
+          aria-disabled={!!o.blocked}
+          title={o.blocked ?? o.title}
+          onClick={() => !o.blocked && o.pick()}
+          className={`flex items-center gap-1.5 rounded-full px-2.5 py-0.5 ${
+            o.on ? "bg-ink text-paper" : o.blocked ? "cursor-not-allowed text-muted" : "text-ink-2 hover:text-ink"
+          }`}
+        >
+          {o.key === "live" && <span className={`size-1.5 rounded-full ${o.on ? "bg-[#199e70]" : "bg-line"}`} />}
+          {o.label}
+        </button>
+      ))}
+    </div>
   );
 }
 

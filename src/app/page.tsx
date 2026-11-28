@@ -13,5 +13,5 @@ export default function Page() {
     yield: l.yield,
     density: l.binCounts ? stackedMap(l.wafers).map((v) => +v.toFixed(3)) : null,
   }));
-  return <Workbench lots={lots} liveAvailable={!!process.env.ANTHROPIC_API_KEY || !!process.env.LLM_API_KEY} />;
+  return <Workbench lots={lots} />;
 }

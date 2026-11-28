@@ -16,7 +16,7 @@ npm run dev        # http://localhost:3000
 
 ### 两种模式
 
-- **离线回放**（默认）：没配 API Key 时，用确定性脚本驱动同一套工具，过程和结果都是真实计算出来的，适合在没有外网的环境演示。
+- **离线回放**（默认）：用确定性脚本驱动同一套工具，过程和结果都是真实计算出来的，适合在没有外网的环境演示。
 - **在线 Agent**：在 `.env.local` 里配置
 
   ```
@@ -25,7 +25,7 @@ npm run dev        # http://localhost:3000
   CLAUDE_MODEL=claude-opus-5
   ```
 
-  配好后由 Claude 自主决定调用哪些工具。页头可以勾选「强制回放」切回脚本。
+  配好后在页头把模式从「离线回放」切到「在线」，就由 Claude 自主决定调用哪些工具。
 
 - **在线 Agent（国产模型）**：Claude API 在国内用不了，可以改接 DeepSeek、通义千问、智谱 GLM、腾讯混元等支持工具调用的模型（走 OpenAI 兼容协议，代码在 `src/lib/agent/compat.ts`）：
 
@@ -46,7 +46,9 @@ npm run dev        # http://localhost:3000
   | `glm` | `https://open.bigmodel.cn/api/paas/v4` | `glm-4.6` |
   | `hunyuan` | `https://api.hunyuan.cloud.tencent.com/v1` | `hunyuan-turbos-latest` |
 
-  优先级：配了 `ANTHROPIC_API_KEY` 用 Claude，否则配了 `LLM_API_KEY` 用国产模型，都没有就离线回放。改完 `.env.local` 要重启；生产环境（`npm start`）还要重新 `npm run build`，因为首页是构建时生成的。
+  页面打开时**默认都是离线回放**，不管配没配 Key。配了 Key 后，页头的「在线」才能点，切过去才会调大模型。调查开始后模式就锁定了，要换先点「新调查」。
+
+  配了两种 Key 时，「在线」用 Claude（`ANTHROPIC_API_KEY` 优先）。改完 `.env.local` 重启服务即可，不用重新构建。
 
 ## 演示脚本（三个预置场景）
 

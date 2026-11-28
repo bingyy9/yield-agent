@@ -1,5 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { connection } from "next/server";
 import OpenAI from "openai";
+import { liveBackend } from "@/lib/agent/backend";
 import { COMPAT, runCompat } from "@/lib/agent/compat";
 import { LIVE_MODEL, runLive } from "@/lib/agent/live";
 import { runReplay } from "@/lib/agent/replay";
@@ -11,7 +13,8 @@ interface Body {
   prompt: string;
   history?: unknown[];
   turn?: number;
-  forceReplay?: boolean;
+  /** 用户在页头选了「在线」才为 true；默认离线回放 */
+  live?: boolean;
 }
 
 function describe(err: unknown) {
@@ -26,12 +29,12 @@ function describe(err: unknown) {
   return err instanceof Error ? err.message : String(err);
 }
 
-// 选后端：配了 ANTHROPIC_API_KEY 用 Claude；否则配了 LLM_API_KEY 用国产模型；都没有就离线回放
-function backend(forceReplay?: boolean) {
-  if (forceReplay) return { kind: "replay" as const, model: "离线回放" };
-  if (process.env.ANTHROPIC_API_KEY) return { kind: "claude" as const, model: LIVE_MODEL };
-  if (COMPAT) return { kind: "compat" as const, model: COMPAT.model };
-  return { kind: "replay" as const, model: "离线回放" };
+
+// 页面加载时问一次：在线模式能不能用、用的是哪个模型（null 表示服务端没配 Key，只能离线回放）
+// connection() 让它每次请求时现算，而不是构建时就定死，这样改了 .env.local 只要重启、不用重新构建
+export async function GET() {
+  await connection();
+  return Response.json({ liveModel: liveBackend()?.model ?? null });
 }
 
 export async function POST(request: Request) {
@@ -39,7 +42,8 @@ export async function POST(request: Request) {
   const prompt = (body.prompt ?? "").trim();
   if (!prompt) return Response.json({ error: "prompt 不能为空" }, { status: 400 });
 
-  const be = backend(body.forceReplay);
+  // 默认离线回放；用户选了在线、并且服务端配了 Key，才调大模型
+  const be = (body.live && liveBackend()) || { kind: "replay" as const, model: "离线回放" };
   const encoder = new TextEncoder();
 
   const stream = new ReadableStream({
